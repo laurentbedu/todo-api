@@ -26,8 +26,11 @@ SET time_zone = "+00:00";
 --
 -- Structure de la table `customer`
 --
-
+DROP TABLE IF EXISTS `task`;
+DROP TABLE IF EXISTS `todo`;
+DROP TABLE IF EXISTS `priority`;
 DROP TABLE IF EXISTS `customer`;
+
 CREATE TABLE IF NOT EXISTS `customer` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
@@ -50,11 +53,12 @@ INSERT INTO `customer` (`id`, `email`, `pincode`, `is_deleted`) VALUES
 -- Structure de la table `priority`
 --
 
-DROP TABLE IF EXISTS `priority`;
+
 CREATE TABLE IF NOT EXISTS `priority` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `label` varchar(255) DEFAULT NULL,
   `color` varchar(255) DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
@@ -73,7 +77,7 @@ INSERT INTO `priority` (`id`, `label`, `color`) VALUES
 -- Structure de la table `task`
 --
 
-DROP TABLE IF EXISTS `task`;
+
 CREATE TABLE IF NOT EXISTS `task` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
@@ -130,7 +134,7 @@ INSERT INTO `task` (`id`, `title`, `description`, `deadline_date`, `is_completed
 -- Structure de la table `todo`
 --
 
-DROP TABLE IF EXISTS `todo`;
+
 CREATE TABLE IF NOT EXISTS `todo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
