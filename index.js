@@ -8,7 +8,7 @@ app.get('/', async (req, res) => {
     res.json(rows);
 })
 
-app.get('/:table', async (req, res) => {
+app.get('/:table', async (req, res) => { //TODO Tests
     const { table } = req.params;
     const sql = `SELECT * FROM ${table} WHERE is_deleted = 0`;
     await query(sql)
@@ -20,11 +20,11 @@ app.get('/:table', async (req, res) => {
     });
 })
 
-app.get('/:table/:id', async (req, res) => {
+app.get('/:table/:id', async (req, res) => { //TODO Tests
     const { table, id } = req.params;
     const sql = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
     await query(sql)
-    .then((data) => {
+    .then(data => {
         data = data.length == 1 ? data.pop() : null;
         const result = data != null;
         const message = (result ? `the` : `no`) + ` row of table ${table} with id=${id} has been selected`
@@ -35,7 +35,7 @@ app.get('/:table/:id', async (req, res) => {
     });
 })
 
-app.post('/:table', async (req, res) => {
+app.post('/:table', async (req, res) => { //TODO Tests
     const { table } = req.params;
     const { body } = req;
     for(const key in body){
@@ -45,21 +45,27 @@ app.post('/:table', async (req, res) => {
     const keys = Object.keys(body).join(",");
     const values = "'" + Object.values(body).join("','") + "'";
     const sqlInsert = `INSERT INTO ${table} ( ${keys} ) VALUES ( ${values} )`;
-    const insertResult = await query(sqlInsert)
-    .then()
-    .catch();
-    
-    //TODO Refactor
-    
-    const { insertId } = insertResult;
-    const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${insertId}`;
-    const rows = await query(sqlSelect);
-    const data = rows.length == 1 ? rows.pop() : null;
-    const result = data != null;
-    res.json({data, result, message: `the row of ${table} with id=${id} has been inserted`});
+    await query(sqlInsert)
+    .then(insertResult => {
+        const { insertId } = insertResult;
+        const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${insertId}`;
+        query(sqlSelect)
+        .then(data => {
+            data = data.length == 1 ? data.pop() : null;
+            const result = data != null  && insertResult.affectedRows == 1 ;
+            const message = (result ? `a` : `no`) + ` row with id=${insertId} has been inserted in table ${table}`
+            res.json({data, result, message});
+        })
+        .catch(err => {
+            res.json({data: null, result: false, message: err.message});
+        });
+    })
+    .catch(err => {
+        res.json({data: null, result: false, message: err.message});
+    });
 })
 
-app.put('/:table/:id', async (req, res) => {
+app.put('/:table/:id', async (req, res) => { //TODO Tests
     const { table, id } = req.params;
     const { body } = req;
     for(const key in body){
@@ -71,33 +77,63 @@ app.put('/:table/:id', async (req, res) => {
         const [key, value] = entry;
         return `${key}='${value}'`;
     }).join(',')
-    //TODO Refactor
     const sqlUpdate = `UPDATE ${table} SET ${values} WHERE id = ${id}`;
-    const updateResult = await query(sqlUpdate);
-    const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
-    const rows = await query(sqlSelect);
-    const data = rows.length == 1 ? rows.pop() : null;
-    const result = data != null;
-    res.json({data, result, message: `the row of ${table} with id=${id} has been updated`});
+    await query(sqlUpdate)
+    .then(updateResult => {
+        const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
+        query(sqlSelect)
+        .then(data => {
+            data = data.length == 1 ? data.pop() : null;
+            const result = data != null && updateResult.affectedRows == 1 ;
+            const message = (result ? `the` : `no`) + ` row of table ${table} with id=${id} has been updated`
+            res.json({data, result, message});
+        })
+        .catch(err => {
+            res.json({data: null, result: false, message: err.message});
+        });
+    })
+    .catch(err => {
+        res.json({data: null, result: false, message: err.message});
+    });
 })
 
-app.patch('/:table/:id', async (req, res) => { //TODO Refactor + Test
+app.patch('/:table/:id', async (req, res) => { //TODO Tests
     const { table, id } = req.params;
     const sqlUpdate = `UPDATE ${table} SET is_deleted = 1 WHERE id = ${id}`;
-    const updateResult = await query(sqlUpdate);
-    const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 1 AND id = ${id}`;
-    const rows = await query(sqlSelect);
-    const result = rows.length == 1 ? true : false;
-    const data = rows.length == 1 ? rows.pop() : null;
-    res.json({data, result, message: `the row of ${table} with id=${id} has been soft deleted`});
+    await query(sqlUpdate)
+    .then(updateResult => {
+        const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 1 AND id = ${id}`;
+        query(sqlSelect)
+        .then(data => {
+            data = data.length == 1 ? data.pop() : null;
+            const result = data != null && updateResult.affectedRows == 1;
+            const message = (result ? `the` : `no`) + ` row of table ${table} with id=${id} has been softly deleted`
+            res.json({data, result, message});
+        })
+        .catch(err => {
+            res.json({data: null, result: false, message: err.message});
+        });
+    })
+    .catch(err => {
+        res.json({data: null, result: false, message: err.message});
+    });
 })
 
-app.delete('/:table/:id', async (req, res) => { //TODO Test
+app.delete('/:table/:id', async (req, res) => { //TODO Tests
     const { table, id } = req.params;
     const sqlDelete = `DELETE FROM ${table} WHERE id = ${id}`;
     await query(sqlDelete)
-    .then(() => {
-        res.json({data: null, result: true, message: `the row of ${table} with id=${id} has been hard deleted`});
+    .then(deleteResult => {
+        const sqlSelect = `SELECT * FROM ${table} WHERE id = ${id}`;
+        query(sqlSelect)
+        .then(data => {
+            const result = data.length == 0 && deleteResult.affectedRows == 1;
+            const message = (result ? `the` : `no`) + ` row of table ${table} with id=${id} has been hardly deleted`
+            res.json({data, result, message});
+        })
+        .catch(err => {
+            res.json({data: null, result: false, message: err.message});
+        });
     })
     .catch(err => {
         res.json({data: null, result: false, message: err.message});
