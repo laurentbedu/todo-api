@@ -4,7 +4,20 @@ app.use(express.json());
 const {query} = require("./api/services/database.service");
 
 app.get('/', async (req, res) => {
+    //TODO https://stackoverflow.com/questions/11477121/mysql-return-updated-rows
+    // https://www.fullstacktutorials.com/mysql-stored-procedure-example-with-parameter-37.html
+    // https://www.mysqltutorial.org/mysql-nodejs/call-stored-procedures/
     const rows = await query("SHOW TABLES");
+    let sqlUpdate = `START TRANSACTION; ` +
+    `UPDATE todo SET title = 'modifié' WHERE is_deleted = 0 AND id = 8; ` + 
+    `SELECT * FROM todo WHERE is_deleted = 0 AND id = 8; ` + 
+    `COMMIT;`
+    await query(sqlUpdate)
+    .then(updateResult => {
+        console.log(updateResult);
+    }).catch(err => {
+        console.log(err);
+    });
     res.json(rows);
 })
 
