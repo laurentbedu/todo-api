@@ -1,10 +1,11 @@
-
 const express = require("express");
 const app = express();
 app.use(express.json());
 const { query } = require("./api/services/database.service");
 const cors = require("cors");
 app.use(cors());
+const bcrypt = require("bcrypt");
+const config = require("./api/config");
 
 app.post("/login", async (req, res) => {
   const { body } = req;
@@ -13,11 +14,15 @@ app.post("/login", async (req, res) => {
                 WHERE is_deleted = 0 
                 AND email = '${body.email}'`;
   await query(sql)
-    .then((json) => {
+    .then(async (json) => {
       //console.log(json);
       const user = json.length === 1 ? json.pop() : null;
       //console.log(user);
-      if (user && user.pincode === +body.pincode) {
+      if (user) {
+        const pincodesMatch = await bcrypt.compare(body.pincode, config.hash.prefix + user.pincode);
+        if(!pincodesMatch){
+            throw new Error("Bad Login");
+        }
         const { id, email } = user;
         const data = { id, email };
         res.json({ data, result: true, message: `Login OK` });
