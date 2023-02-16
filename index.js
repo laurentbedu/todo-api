@@ -6,26 +6,28 @@ const cors = require("cors");
 app.use(cors());
 const bcrypt = require("bcrypt");
 const config = require("./api/config");
+const jwt = require("jsonwebtoken");
 
 app.post("/login", async (req, res) => {
   const { body } = req;
-  //console.log(body);
   const sql = `SELECT * FROM customer 
                 WHERE is_deleted = 0 
                 AND email = '${body.email}'`;
   await query(sql)
     .then(async (json) => {
-      //console.log(json);
       const user = json.length === 1 ? json.pop() : null;
-      //console.log(user);
       if (user) {
-        const pincodesMatch = await bcrypt.compare(body.pincode, config.hash.prefix + user.pincode);
-        if(!pincodesMatch){
-            throw new Error("Bad Login");
+        const pincodesMatch = await bcrypt.compare(
+          body.pincode,
+          config.hash.prefix + user.pincode
+        );
+        if (!pincodesMatch) {
+          throw new Error("Bad Login");
         }
         const { id, email } = user;
         const data = { id, email };
-        res.json({ data, result: true, message: `Login OK` });
+        const token = jwt.sign(data, config.token.secret);
+        res.json({ data, result: true, message: `Login OK`, token });
       } else {
         throw new Error("Bad Login");
       }
