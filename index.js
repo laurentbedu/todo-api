@@ -222,6 +222,8 @@ app.delete("/:table/:id", async (req, res) => {
     });
 });
 
+
+
 app.get("/", async (req, res) => {
   //TODO https://stackoverflow.com/questions/11477121/mysql-return-updated-rows
   // https://www.fullstacktutorials.com/mysql-stored-procedure-example-with-parameter-37.html
