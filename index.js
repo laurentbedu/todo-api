@@ -222,7 +222,12 @@ app.use(dbRouter);
 //     });
 // });
 
-
+let tables;
+//IIFE
+(async () => {
+  tables = await query("SHOW TABLES");
+  tables = tables.map((row) => row.Tables_in_todo_db);
+})();
 
 app.get("/", async (req, res) => {
   //TODO https://stackoverflow.com/questions/11477121/mysql-return-updated-rows
@@ -244,12 +249,7 @@ app.get("/", async (req, res) => {
   res.json("OK");
 });
 
-let tables;
-//IIFE
-(async () => {
-  tables = await query("SHOW TABLES");
-  tables = tables.map((row) => row.Tables_in_todo_db);
-})();
+
 
 const PORT = 5000;
 app.listen(PORT, () => {
