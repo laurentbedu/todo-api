@@ -1,11 +1,11 @@
 const express = require("express");
-const authRouter = express.Router();
+const dbRouter = express.Router();
 const { query } = require("../services/database.service");
 
 //TODO GET/:table, GET/:table:id, POST/:table, 
 //PUT/:table:id, PATCH/:table:id, DELETE/:table:id
 
-authRouter.get("/:table", async (req, res) => {
+dbRouter.get("/:table", async (req, res) => {
     const { table } = req.params;
     const sql = `SELECT * FROM ${table} WHERE is_deleted = 0`;
     await query(sql)
@@ -21,7 +21,7 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
   
-  authRouter.get("/:table/:id", async (req, res) => {
+  dbRouter.get("/:table/:id", async (req, res) => {
     //TODO Tests
     const { table, id } = req.params;
     const sql = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
@@ -39,7 +39,7 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
   
-  authRouter.post("/:table", async (req, res) => {
+  dbRouter.post("/:table", async (req, res) => {
     //TODO Tests
     const { table } = req.params;
     const { body } = req;
@@ -72,7 +72,7 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
   
-  authRouter.put("/:table/:id", async (req, res) => {
+  dbRouter.put("/:table/:id", async (req, res) => {
     //TODO Tests
     const { table, id } = req.params;
     const { body } = req;
@@ -111,7 +111,7 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
   
-  authRouter.patch("/:table/:id", async (req, res) => {
+  dbRouter.patch("/:table/:id", async (req, res) => {
     //TODO Tests
     const { table, id } = req.params;
     const sqlUpdate = `UPDATE ${table} SET is_deleted = 1 WHERE is_deleted = 0 AND id = ${id}`;
@@ -136,7 +136,7 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
   
-  authRouter.delete("/:table/:id", async (req, res) => {
+  dbRouter.delete("/:table/:id", async (req, res) => {
     //TODO Tests
     const { table, id } = req.params;
     const sqlDelete = `DELETE FROM ${table} WHERE id = ${id}`;
@@ -160,4 +160,4 @@ authRouter.get("/:table", async (req, res) => {
       });
   });
 
-module.exports = authRouter;
+module.exports = dbRouter;
