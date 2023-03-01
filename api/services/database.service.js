@@ -16,16 +16,18 @@ async function connect() {
   return db;
 }
 
-async function query(sql) {
+async function query(sql, params = []) {
   const connection = await connect();
-  const [rows] = await connection.query(sql);
+  // const [rows] = await connection.execute(sql);
+  const statement = await connection.prepare(sql);
+  const [rows] = await statement.execute(params);
   return rows;
 }
 
 async function selectAll(table) {
-  const sql = `SELECT * FROM ${table} WHERE is_deleted = 0`;
+  const sql = `SELECT * FROM ${table} WHERE is_deleted = ?`;
   let resp;
-  await query(sql)
+  await query(sql, [0])
     .then((data) => {
       resp = {
         data,
@@ -40,9 +42,9 @@ async function selectAll(table) {
 }
 
 async function selectOne(table, id) {
-  const sql = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
+  const sql = `SELECT * FROM ${table} WHERE is_deleted = ? AND id = ?`;
   let resp;
-  await query(sql)
+  await query(sql, [0, id])
     .then((data) => {
       data = data.length == 1 ? data.pop() : null;
       const result = data != null;
@@ -58,15 +60,17 @@ async function selectOne(table, id) {
 }
 
 async function createOne(table, body) {
-  for (const key in body) {
-    if (typeof body[key] == "string")
-      body[key] = body[key].replace(/'/g, "\\'");
-  }
+  // for (const key in body) {
+  //   if (typeof body[key] == "string")
+  //     body[key] = body[key].replace(/'/g, "\\'");
+  // }
   const keys = Object.keys(body).join(",");
-  const values = "'" + Object.values(body).join("','") + "'";
+  // const values = "'" + Object.values(body).join("','") + "'";
+  const values = Object.values(body).map(()=>"?").join(",");
+  const params = Object.values(body);
   const sqlInsert = `INSERT INTO ${table} ( ${keys} ) VALUES ( ${values} )`;
   let resp;
-  await query(sqlInsert)
+  await query(sqlInsert, params)
     .then(async (insertResult) => {
       const { insertId } = insertResult;
       const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${insertId}`;
@@ -93,19 +97,22 @@ async function updateOne(table, id, body) {
     for (const key in body) {
         if (key == "is_deleted") delete body[key];
     
-        if (typeof body[key] == "string")
-          body[key] = body[key].replace(/'/g, "\\'");
+        // if (typeof body[key] == "string")
+        //   body[key] = body[key].replace(/'/g, "\\'");
       }
       const entries = Object.entries(body);
+      const params = [];
       const values = entries
         .map((entry) => {
           const [key, value] = entry;
-          return `${key}='${value}'`;
+          params.push(value)
+          return `${key}=?`;
         })
         .join(",");
-      const sqlUpdate = `UPDATE ${table} SET ${values} WHERE is_deleted = 0 AND id = ${id}`;
+      const sqlUpdate = `UPDATE ${table} SET ${values} WHERE is_deleted = ? AND id = ?`;
+      params.push(0, id);
       let resp;
-      await query(sqlUpdate)
+      await query(sqlUpdate, params)
         .then(async (updateResult) => {
           const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 0 AND id = ${id}`;
           await query(sqlSelect)
@@ -128,9 +135,9 @@ async function updateOne(table, id, body) {
 }
 
 async function softDeleteOne(table, id) {
-    const sqlUpdate = `UPDATE ${table} SET is_deleted = 1 WHERE is_deleted = 0 AND id = ${id}`;
+    const sqlUpdate = `UPDATE ${table} SET is_deleted = ? WHERE is_deleted = ? AND id = ?`;
     let resp;
-    await query(sqlUpdate)
+    await query(sqlUpdate, [1, 0, id])
       .then(async (updateResult) => {
         const sqlSelect = `SELECT * FROM ${table} WHERE is_deleted = 1 AND id = ${id}`;
         await query(sqlSelect)
@@ -153,9 +160,9 @@ async function softDeleteOne(table, id) {
 }
 
 async function hardDeleteOne(table, id) {
-    const sqlDelete = `DELETE FROM ${table} WHERE id = ${id}`;
+    const sqlDelete = `DELETE FROM ${table} WHERE id = ?`;
     let resp;
-    await query(sqlDelete)
+    await query(sqlDelete, [id])
       .then(async (deleteResult) => {
         const sqlSelect = `SELECT * FROM ${table} WHERE id = ${id}`;
         await query(sqlSelect)
